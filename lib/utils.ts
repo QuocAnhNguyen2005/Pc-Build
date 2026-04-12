@@ -7,7 +7,14 @@ export const priceFormatter = new Intl.NumberFormat('vi-VN', {
 });
 
 /**
- * Format a price value
+ * Format a price value without currency symbol
+ */
+export const formatPriceSimple = (price: number): string => {
+  return new Intl.NumberFormat('vi-VN').format(price);
+};
+
+/**
+ * Format a price value with currency symbol
  */
 export const formatPrice = (price: number): string => {
   return priceFormatter.format(price);

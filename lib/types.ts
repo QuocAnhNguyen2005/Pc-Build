@@ -10,6 +10,13 @@ export interface Product {
   brand: string;
   price: number;
   specs?: ProductSpecs;
+  category_id?: string;
+  created_at?: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
   created_at?: string;
 }
 
