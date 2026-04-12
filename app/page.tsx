@@ -1,21 +1,19 @@
 import { supabase } from '@/lib/supabase';
-
-const priceFormatter = new Intl.NumberFormat('vi-VN', {
-  style: 'currency',
-  currency: 'VND',
-});
+import type { Product } from '@/lib/types';
+import { ProductCard } from '@/app/components/ProductCard';
+import { ErrorMessage } from '@/app/components/ErrorMessage';
+import { EmptyState } from '@/app/components/EmptyState';
 
 export default async function Home() {
   const { data: products, error } = await supabase
     .from('products')
-    .select('*');
+    .select('id,name,brand,price,specs')
+    .order('created_at', { ascending: false });
 
   if (error) {
     return (
       <main className="p-10">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          Lỗi lấy dữ liệu: {error.message}
-        </div>
+        <ErrorMessage message={`Lỗi lấy dữ liệu: ${error.message}`} />
       </main>
     );
   }
@@ -24,34 +22,21 @@ export default async function Home() {
     return (
       <main className="p-10">
         <h1 className="text-3xl font-bold mb-6">Danh sách linh kiện PC</h1>
-        <p className="text-gray-500">Không có sản phẩm nào.</p>
+        <EmptyState />
       </main>
     );
   }
 
   return (
     <main className="p-10">
-      <h1 className="text-3xl font-bold mb-6">Danh sách linh kiện PC</h1>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Danh sách linh kiện PC</h1>
+        <p className="text-gray-600">Tổng cộng: {products.length} sản phẩm</p>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products.map((item) => (
-          <div
-            key={item.id}
-            className="border p-4 rounded-lg shadow-md bg-white hover:shadow-lg transition-shadow"
-          >
-            <h2 className="text-xl font-semibold text-blue-600">{item.name}</h2>
-            <p className="text-gray-500">Hãng: {item.brand}</p>
-            <p className="text-red-500 font-bold mt-2">
-              Giá: {priceFormatter.format(item.price)}
-            </p>
-
-            {item.specs && (
-              <div className="mt-4 text-sm text-gray-600 bg-gray-100 p-2 rounded">
-                {item.specs.socket && <p>Socket: {item.specs.socket}</p>}
-                {item.specs.cores && <p>Nhân: {item.specs.cores}</p>}
-              </div>
-            )}
-          </div>
+        {(products as Product[]).map((product) => (
+          <ProductCard key={product.id} product={product} />
         ))}
       </div>
     </main>
