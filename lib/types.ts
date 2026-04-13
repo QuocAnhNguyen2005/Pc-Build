@@ -1,6 +1,8 @@
 export interface ProductSpecs {
   socket?: string;
   cores?: number;
+  type?: string; // RAM type (DDR4, DDR5, etc.)
+  ram_type?: string; // Motherboard RAM type
   [key: string]: string | number | undefined;
 }
 
@@ -17,6 +19,7 @@ export interface Product {
 export interface Category {
   id: string;
   name: string;
+  slug?: string;
   created_at?: string;
 }
 

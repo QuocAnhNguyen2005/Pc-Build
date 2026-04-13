@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { Product } from '@/lib/types';
 import { formatPriceSimple } from '@/lib/utils';
 
@@ -28,12 +29,14 @@ interface ProductGridProps {
   products: Product[];
   loading: boolean;
   loadingCount?: number;
+  onSelectProduct?: (product: Product) => void;
 }
 
 export function ProductGrid({
   products,
   loading,
   loadingCount = 6,
+  onSelectProduct,
 }: ProductGridProps) {
   if (loading) {
     return (
@@ -80,9 +83,20 @@ export function ProductGrid({
             <span className="text-xl font-black text-blue-600">
               {formatPriceSimple(item.price)}đ
             </span>
-            <button className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-600 transition">
-              Chọn
-            </button>
+            {onSelectProduct ? (
+              <Link href="/builder">
+                <button 
+                  onClick={() => onSelectProduct(item)}
+                  className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-600 transition"
+                >
+                  ✓ Chọn
+                </button>
+              </Link>
+            ) : (
+              <button className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-600 transition">
+                Chọn
+              </button>
+            )}
           </div>
 
           <SpecsBadges specs={item.specs} />

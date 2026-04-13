@@ -1,12 +1,19 @@
-import type { Product } from '@/lib/types';
+import Link from 'next/link';
+import type { Product, Category } from '@/lib/types';
 import { formatPrice } from '@/lib/utils';
 
 interface ProductCardProps {
   product: Product;
+  category?: Category;
+  onSelect?: (product: Product) => void;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, category, onSelect }: ProductCardProps) {
   const { name, brand, price, specs } = product;
+
+  const handleSelect = () => {
+    onSelect?.(product);
+  };
 
   return (
     <div className="border p-4 rounded-lg shadow-md bg-white hover:shadow-lg transition-shadow duration-200">
@@ -21,6 +28,17 @@ export function ProductCard({ product }: ProductCardProps) {
           {specs.socket && <p>Socket: {specs.socket}</p>}
           {specs.cores && <p>Nhân: {specs.cores}</p>}
         </div>
+      )}
+
+      {onSelect && (
+        <Link href="/builder">
+          <button
+            onClick={handleSelect}
+            className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-medium transition"
+          >
+            ✓ Chọn linh kiện
+          </button>
+        </Link>
       )}
     </div>
   );

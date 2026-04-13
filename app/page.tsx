@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import Link from 'next/link';
 import type { Product, Category } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
 import { CategorySidebar } from '@/app/components/CategorySidebar';
@@ -18,8 +19,11 @@ export default function Home() {
     gpu: null,
     ram: null,
     psu: null,
-    ssd: null,
+    ssd1: null,
+    ssd2: null,
+    hdd: null,
   });
+  const [selectedCount, setSelectedCount] = useState(0);
 
   // Create a category lookup map for O(1) access instead of O(n) find
   const categoryMap = useMemo(() => {
@@ -43,6 +47,21 @@ export default function Home() {
     };
 
     fetchCategories();
+  }, []);
+
+  // Load selected parts from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('selectedParts');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setSelectedParts(parsed);
+        const count = Object.values(parsed).filter(p => p !== null).length;
+        setSelectedCount(count);
+      }
+    } catch (err) {
+      console.error('Error loading selected parts:', err);
+    }
   }, []);
 
   // Fetch products based on selected category and CPU compatibility
@@ -93,6 +112,38 @@ export default function Home() {
     setSelectedCat(catId);
   }, []);
 
+  const handleSelectProduct = useCallback((product: Product) => {
+    try {
+      // Map category slug to part key
+      const slugToPart: { [key: string]: string } = {
+        'cpu': 'cpu',
+        'mainboard': 'mainboard',
+        'gpu': 'gpu',
+        'ram': 'ram',
+        'psu': 'psu',
+        'ssd': 'ssd1', // Default to ssd1, can be improved
+        'hdd': 'hdd',
+      };
+
+      const currentCategory = categoryMap.get(product.category_id || '');
+      const partKey = currentCategory?.slug ? slugToPart[currentCategory.slug] : null;
+
+      if (partKey) {
+        const updated = {
+          ...selectedParts,
+          [partKey]: product,
+        };
+        setSelectedParts(updated);
+        localStorage.setItem('selectedParts', JSON.stringify(updated));
+        
+        const count = Object.values(updated).filter(p => p !== null).length;
+        setSelectedCount(count);
+      }
+    } catch (err) {
+      console.error('Error selecting product:', err);
+    }
+  }, [selectedParts, categoryMap]);
+
   // Memoize category name to avoid recalculation on every render
   const categoryName = useMemo(() => {
     if (!selectedCat) return 'Tất cả sản phẩm';
@@ -110,12 +161,17 @@ export default function Home() {
 
       <main className="flex-1 p-10">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-extrabold text-gray-900">{categoryName}</h1>
-          <div className="text-right">
-            <p className="text-gray-500 font-medium">
+          <div>
+            <h1 className="text-3xl font-extrabold text-gray-900">{categoryName}</h1>
+            <p className="text-gray-500 font-medium mt-1">
               Tìm thấy {products.length} linh kiện
             </p>
           </div>
+          <Link href="/builder">
+            <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold transition flex items-center gap-2">
+              🛒 Xem Builder ({selectedCount}/8)
+            </button>
+          </Link>
         </div>
 
         {error && (
@@ -131,7 +187,12 @@ export default function Home() {
           </div>
         )}
 
-        <ProductGrid products={products} loading={loading} loadingCount={6} />
+        <ProductGrid 
+          products={products} 
+          loading={loading} 
+          loadingCount={6}
+          onSelectProduct={handleSelectProduct}
+        />
       </main>
     </div>
   );
