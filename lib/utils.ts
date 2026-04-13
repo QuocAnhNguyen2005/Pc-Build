@@ -19,3 +19,25 @@ export const formatPriceSimple = (price: number): string => {
 export const formatPrice = (price: number): string => {
   return priceFormatter.format(price);
 };
+
+/**
+ * Calculate total power consumption from selected parts
+ */
+export const calculateTotalPower = (selectedParts: { [key: string]: any }): number => {
+  let total = 0;
+  
+  if (selectedParts.cpu?.specs?.power_consumption) {
+    total += selectedParts.cpu.specs.power_consumption;
+  }
+  if (selectedParts.gpu?.specs?.power_consumption) {
+    total += selectedParts.gpu.specs.power_consumption;
+  }
+  if (selectedParts.mainboard?.specs?.power_consumption) {
+    total += selectedParts.mainboard.specs.power_consumption;
+  }
+  if (selectedParts.ram?.specs?.power_consumption) {
+    total += selectedParts.ram.specs.power_consumption;
+  }
+  
+  return total;
+};

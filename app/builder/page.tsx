@@ -75,8 +75,64 @@ export default function BuilderPage() {
   useEffect(() => {
     const newWarnings: CompatibilityWarning[] = [];
 
+    // Calculate total power consumption
+    let totalPowerConsumption = 0;
+    const powerSources: string[] = [];
+
+    if (selectedParts.cpu?.specs?.power_consumption) {
+      totalPowerConsumption += selectedParts.cpu.specs.power_consumption;
+      powerSources.push(`CPU: ${selectedParts.cpu.specs.power_consumption}W`);
+    }
+
+    if (selectedParts.gpu?.specs?.power_consumption) {
+      totalPowerConsumption += selectedParts.gpu.specs.power_consumption;
+      powerSources.push(`GPU: ${selectedParts.gpu.specs.power_consumption}W`);
+    }
+
+    if (selectedParts.mainboard?.specs?.power_consumption) {
+      totalPowerConsumption += selectedParts.mainboard.specs.power_consumption;
+      powerSources.push(`Mainboard: ${selectedParts.mainboard.specs.power_consumption}W`);
+    }
+
+    if (selectedParts.ram?.specs?.power_consumption) {
+      totalPowerConsumption += selectedParts.ram.specs.power_consumption;
+      powerSources.push(`RAM: ${selectedParts.ram.specs.power_consumption}W`);
+    }
+
+    // Check PSU compatibility
+    if (selectedParts.psu && totalPowerConsumption > 0) {
+      const psuMaxPower = selectedParts.psu.specs?.max_power;
+
+      if (psuMaxPower) {
+        // Add a 20% safety margin (recommended for stable system)
+        const safetyMargin = totalPowerConsumption * 0.2;
+        const recommendedMinPower = totalPowerConsumption + safetyMargin;
+
+        if (psuMaxPower < totalPowerConsumption) {
+          newWarnings.push({
+            type: 'error',
+            message: `❌ PSU không đủ công suất! Tiêu thụ: ${totalPowerConsumption}W, PSU: ${psuMaxPower}W`,
+          });
+        } else if (psuMaxPower < recommendedMinPower) {
+          newWarnings.push({
+            type: 'warning',
+            message: `⚠️ PSU gần hết công suất! Tiêu thụ: ${totalPowerConsumption}W, PSU: ${psuMaxPower}W (Khuyến nghị tối thiểu: ${Math.round(recommendedMinPower)}W)`,
+          });
+        }
+      }
+    }
+
+    // Warning if PSU selected but no power-consuming components
+    if (selectedParts.psu && totalPowerConsumption === 0) {
+      newWarnings.push({
+        type: 'warning',
+        message: '⚠️ Chưa có thông tin tiêu thụ điện. Vui lòng thêm CPU, GPU, hoặc các linh kiện khác',
+      });
+    }
+
     // Check for missing required components
     const missingComponents: string[] = [];
+    
     
     COMPONENT_CATEGORIES.forEach((cat) => {
       if (cat.required && !selectedParts[cat.id]) {
@@ -307,6 +363,38 @@ export default function BuilderPage() {
                 )}
 
                 <div className="h-px bg-gray-200"></div>
+
+                {/* Power Consumption */}
+                {(selectedParts.cpu?.specs?.power_consumption || 
+                  selectedParts.gpu?.specs?.power_consumption ||
+                  selectedParts.mainboard?.specs?.power_consumption ||
+                  selectedParts.ram?.specs?.power_consumption) && (
+                  <>
+                    <div className="text-sm">
+                      <p className="text-gray-600 font-medium mb-2">⚡ Tiêu thụ điện:</p>
+                      
+                      {selectedParts.cpu?.specs?.power_consumption && (
+                        <p className="text-xs text-gray-600">CPU: {selectedParts.cpu.specs.power_consumption}W</p>
+                      )}
+                      {selectedParts.gpu?.specs?.power_consumption && (
+                        <p className="text-xs text-gray-600">GPU: {selectedParts.gpu.specs.power_consumption}W</p>
+                      )}
+                      {selectedParts.mainboard?.specs?.power_consumption && (
+                        <p className="text-xs text-gray-600">Mainboard: {selectedParts.mainboard.specs.power_consumption}W</p>
+                      )}
+                      {selectedParts.ram?.specs?.power_consumption && (
+                        <p className="text-xs text-gray-600">RAM: {selectedParts.ram.specs.power_consumption}W</p>
+                      )}
+
+                      {selectedParts.psu?.specs?.max_power && (
+                        <p className="text-xs font-bold text-blue-600 mt-2">
+                          PSU: {selectedParts.psu.specs.max_power}W
+                        </p>
+                      )}
+                    </div>
+                    <div className="h-px bg-gray-200"></div>
+                  </>
+                )}
 
                 {/* Compatibility Status */}
                 <div className="flex items-center gap-2 text-sm">
