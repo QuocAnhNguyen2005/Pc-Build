@@ -6,10 +6,12 @@ import type { Product, Category } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
 import { CategorySidebar } from '@/app/components/CategorySidebar';
 import { ProductGrid } from '@/app/components/ProductGrid';
+import { ProductFilters } from '@/app/components/ProductFilters';
 
 export default function Home() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +24,14 @@ export default function Home() {
     ssd1: null,
     ssd2: null,
     hdd: null,
+    case: null,
+    cooling: null,
+    monitor: null,
+    wifi_modem: null,
+    keyboard: null,
+    chair: null,
+    table: null,
+    monitor_arm: null,
   });
   const [selectedCount, setSelectedCount] = useState(0);
 
@@ -108,6 +118,11 @@ export default function Home() {
     fetchProducts();
   }, [fetchProducts]);
 
+  // Initialize filtered products when products change
+  useEffect(() => {
+    setFilteredProducts(products);
+  }, [products]);
+
   const handleSelectCategory = useCallback((catId: string | null) => {
     setSelectedCat(catId);
   }, []);
@@ -121,8 +136,16 @@ export default function Home() {
         'gpu': 'gpu',
         'ram': 'ram',
         'psu': 'psu',
-        'ssd': 'ssd1', // Default to ssd1, can be improved
+        'ssd': 'ssd1', // Default to ssd1
         'hdd': 'hdd',
+        'case': 'case',
+        'cooling': 'cooling',
+        'monitor': 'monitor',
+        'wifi-modem': 'wifi_modem',
+        'keyboard': 'keyboard',
+        'chair': 'chair',
+        'table': 'table',
+        'monitor-arm': 'monitor_arm',
       };
 
       const currentCategory = categoryMap.get(product.category_id || '');
@@ -164,15 +187,23 @@ export default function Home() {
           <div>
             <h1 className="text-3xl font-extrabold text-gray-900">{categoryName}</h1>
             <p className="text-gray-500 font-medium mt-1">
-              Tìm thấy {products.length} linh kiện
+              Tìm thấy {filteredProducts.length} linh kiện
             </p>
           </div>
           <Link href="/builder">
             <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold transition flex items-center gap-2">
-              🛒 Xem Builder ({selectedCount}/8)
+              🛒 Xem Builder ({selectedCount}/16)
             </button>
           </Link>
         </div>
+
+        {/* Product Filters */}
+        {!loading && products.length > 0 && (
+          <ProductFilters 
+            products={products}
+            onFiltersChange={setFilteredProducts}
+          />
+        )}
 
         {error && (
           <div className="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
@@ -188,7 +219,7 @@ export default function Home() {
         )}
 
         <ProductGrid 
-          products={products} 
+          products={filteredProducts} 
           loading={loading} 
           loadingCount={6}
           onSelectProduct={handleSelectProduct}

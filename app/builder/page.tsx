@@ -5,14 +5,22 @@ import Link from 'next/link';
 import type { Product } from '@/lib/types';
 
 const COMPONENT_CATEGORIES = [
-  { id: 'cpu', label: '1. CPU - BỘ VI XỬ LÝ' },
-  { id: 'mainboard', label: '2. MAIN - BỘ MẠCH CHỦ' },
-  { id: 'ram', label: '3. RAM - BỘ NHỚ TRONG' },
-  { id: 'ssd1', label: '4. Ổ CỨNG SSD 1' },
-  { id: 'ssd2', label: '5. Ổ CỨNG SSD 2' },
-  { id: 'hdd', label: '6. Ổ CỨNG HDD' },
-  { id: 'gpu', label: '7. VGA - CARD MÀN HÌNH' },
-  { id: 'psu', label: '8. PSU - NGUỒN MÁY TÍNH' },
+  { id: 'cpu', label: '1. CPU - BỘ VI XỬ LÝ', required: true },
+  { id: 'mainboard', label: '2. MAIN - BỘ MẠCH CHỦ', required: true },
+  { id: 'ram', label: '3. RAM - BỘ NHỚ TRONG', required: true },
+  { id: 'ssd1', label: '4. Ổ CỨNG SSD 1', required: true },
+  { id: 'ssd2', label: '5. Ổ CỨNG SSD 2', required: false },
+  { id: 'hdd', label: '6. Ổ CỨNG HDD', required: false },
+  { id: 'gpu', label: '7. VGA - CARD MÀN HÌNH', required: false },
+  { id: 'psu', label: '8. PSU - NGUỒN MÁY TÍNH', required: true },
+  { id: 'case', label: '9. CASE - VỎ MÁY', required: true },
+  { id: 'cooling', label: '10. FAN - COOLING - TẢN NHIỆT', required: true },
+  { id: 'monitor', label: '11. MONITOR - MÀN HÌNH', required: false },
+  { id: 'wifi_modem', label: '12. WIFI/MODEM - MODEM WIFI', required: false },
+  { id: 'keyboard', label: '13. KEYBOARD - BÀN PHÍM', required: false },
+  { id: 'chair', label: '14. CHAIR - GHẾ', required: false },
+  { id: 'table', label: '15. TABLE - BÀN', required: false },
+  { id: 'monitor_arm', label: '16. MONITOR ARM - GIÁ ĐỠ MÀN HÌNH', required: false },
 ];
 
 interface CompatibilityWarning {
@@ -30,6 +38,14 @@ export default function BuilderPage() {
     ssd1: null,
     ssd2: null,
     hdd: null,
+    case: null,
+    cooling: null,
+    monitor: null,
+    wifi_modem: null,
+    keyboard: null,
+    chair: null,
+    table: null,
+    monitor_arm: null,
   });
   const [totalPrice, setTotalPrice] = useState(0);
   const [warnings, setWarnings] = useState<CompatibilityWarning[]>([]);
@@ -58,6 +74,24 @@ export default function BuilderPage() {
   // Check compatibility
   useEffect(() => {
     const newWarnings: CompatibilityWarning[] = [];
+
+    // Check for missing required components
+    const missingComponents: string[] = [];
+    
+    COMPONENT_CATEGORIES.forEach((cat) => {
+      if (cat.required && !selectedParts[cat.id]) {
+        // Extract the component name from the label
+        const componentName = cat.label.split(' - ')[1] || cat.label;
+        missingComponents.push(componentName);
+      }
+    });
+
+    if (missingComponents.length > 0) {
+      newWarnings.push({
+        type: 'warning',
+        message: `⚠️ Linh kiện bắt buộc còn thiếu: ${missingComponents.join(', ')}`,
+      });
+    }
 
     // Check CPU and Motherboard socket compatibility
     if (selectedParts.cpu && selectedParts.mainboard) {
@@ -130,6 +164,14 @@ export default function BuilderPage() {
         ssd1: null,
         ssd2: null,
         hdd: null,
+        case: null,
+        cooling: null,
+        monitor: null,
+        wifi_modem: null,
+        keyboard: null,
+        chair: null,
+        table: null,
+        monitor_arm: null,
       });
       localStorage.removeItem('selectedParts');
     }
@@ -245,9 +287,25 @@ export default function BuilderPage() {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Số linh kiện:</span>
                   <span className="font-medium text-gray-900">
-                    {Object.values(selectedParts).filter(p => p !== null).length}/8
+                    {Object.values(selectedParts).filter(p => p !== null).length}/{COMPONENT_CATEGORIES.length}
                   </span>
                 </div>
+
+                {/* Missing Required Components */}
+                {COMPONENT_CATEGORIES.filter(cat => cat.required && !selectedParts[cat.id]).length > 0 && (
+                  <>
+                    <div className="h-px bg-gray-200"></div>
+                    <div className="text-sm">
+                      <p className="text-gray-600 font-medium mb-2">Còn thiếu:</p>
+                      <ul className="text-red-600 text-xs space-y-1">
+                        {COMPONENT_CATEGORIES.filter(cat => cat.required && !selectedParts[cat.id]).map(cat => (
+                          <li key={cat.id}>• {cat.label.split(' - ')[1] || cat.label}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </>
+                )}
+
                 <div className="h-px bg-gray-200"></div>
 
                 {/* Compatibility Status */}
