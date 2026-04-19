@@ -52,8 +52,9 @@ export default function Home() {
 
         if (categError) throw categError;
         setCategories(data || []);
-      } catch (err: any) {
-        console.error('Error fetching categories:', err.message);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        console.error('Error fetching categories:', message);
       }
     };
 
@@ -107,13 +108,14 @@ export default function Home() {
 
       if (prodError) throw prodError;
       setProducts(data || []);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch products';
+      setError(message);
       console.error('Error fetching products:', err);
     } finally {
       setLoading(false);
     }
-  }, [selectedCat, categoryMap, selectedParts.cpu?.id]);
+  }, [selectedCat, categoryMap, selectedParts.cpu?.specs?.socket]);
 
   useEffect(() => {
     fetchProducts();
@@ -128,29 +130,29 @@ export default function Home() {
     setSelectedCat(catId);
   }, []);
 
+  // Memoize slug to part mapping
+  const slugToPart = useMemo(() => ({
+    'cpu': 'cpu',
+    'mainboard': 'mainboard',
+    'gpu': 'gpu',
+    'ram': 'ram',
+    'psu': 'psu',
+    'ssd': 'ssd1',
+    'hdd': 'hdd',
+    'case': 'case',
+    'cooling': 'cooling',
+    'monitor': 'monitor',
+    'wifi-modem': 'wifi_modem',
+    'keyboard': 'keyboard',
+    'chair': 'chair',
+    'table': 'table',
+    'monitor-arm': 'monitor_arm',
+  } as const), []);
+
   const handleSelectProduct = useCallback((product: Product) => {
     try {
-      // Map category slug to part key
-      const slugToPart: { [key: string]: string } = {
-        'cpu': 'cpu',
-        'mainboard': 'mainboard',
-        'gpu': 'gpu',
-        'ram': 'ram',
-        'psu': 'psu',
-        'ssd': 'ssd1', // Default to ssd1
-        'hdd': 'hdd',
-        'case': 'case',
-        'cooling': 'cooling',
-        'monitor': 'monitor',
-        'wifi-modem': 'wifi_modem',
-        'keyboard': 'keyboard',
-        'chair': 'chair',
-        'table': 'table',
-        'monitor-arm': 'monitor_arm',
-      };
-
       const currentCategory = categoryMap.get(product.category_id || '');
-      const partKey = currentCategory?.slug ? slugToPart[currentCategory.slug] : null;
+      const partKey = currentCategory?.slug ? slugToPart[currentCategory.slug as keyof typeof slugToPart] : null;
 
       if (partKey) {
         const updated = {
@@ -166,7 +168,7 @@ export default function Home() {
     } catch (err) {
       console.error('Error selecting product:', err);
     }
-  }, [selectedParts, categoryMap]);
+  }, [selectedParts, categoryMap, slugToPart]);
 
   // Memoize category name to avoid recalculation on every render
   const categoryName = useMemo(() => {
@@ -175,7 +177,12 @@ export default function Home() {
   }, [selectedCat, categoryMap]);
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <motion.div
+      className="flex min-h-screen bg-gray-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
       <CategorySidebar
         categories={categories}
         selectedCat={selectedCat}
@@ -184,48 +191,88 @@ export default function Home() {
       />
 
       <main className="flex-1 p-10">
-        <div className="flex justify-between items-center mb-8">
+        <motion.div
+          className="flex justify-between items-center mb-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
           <div>
             <h1 className="text-3xl font-extrabold text-gray-900">{categoryName}</h1>
-            <p className="text-gray-500 font-medium mt-1">
+            <motion.p
+              className="text-gray-500 font-medium mt-1"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+            >
               Tìm thấy {filteredProducts.length} linh kiện
-            </p>
+            </motion.p>
           </div>
           <Link href="/builder">
-            <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold transition flex items-center gap-2">
+            <motion.button
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold transition flex items-center gap-2"
+              whileHover={{ scale: 1.05, boxShadow: '0 10px 25px rgba(22, 163, 74, 0.3)' }}
+              whileTap={{ scale: 0.95 }}
+            >
               🛒 Xem Builder ({selectedCount}/16)
-            </button>
+            </motion.button>
           </Link>
-        </div>
+        </motion.div>
 
         {/* Product Filters */}
-        {!loading && products.length > 0 && (
-          <ProductFilters 
-            products={products}
-            onFiltersChange={setFilteredProducts}
-          />
-        )}
-
-        {error && (
-          <div className="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-            <p className="font-semibold">Lỗi</p>
-            <p>{error}</p>
-            <button
-              onClick={() => fetchProducts()}
-              className="mt-2 text-sm underline hover:no-underline"
+        <AnimatePresence>
+          {!loading && products.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
             >
-              Thử lại
-            </button>
-          </div>
-        )}
+              <ProductFilters 
+                products={products}
+                onFiltersChange={setFilteredProducts}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <ProductGrid 
-          products={filteredProducts} 
-          loading={loading} 
-          loadingCount={6}
-          onSelectProduct={handleSelectProduct}
-        />
+        {/* Error Message */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              className="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              <p className="font-semibold">Lỗi</p>
+              <p>{error}</p>
+              <motion.button
+                onClick={() => fetchProducts()}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="mt-2 text-sm underline hover:no-underline transition"
+              >
+                Thử lại
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4 }}
+        >
+          <ProductGrid 
+            products={filteredProducts} 
+            loading={loading} 
+            loadingCount={6}
+            onSelectProduct={handleSelectProduct}
+          />
+        </motion.div>
       </main>
-    </div>
+    </motion.div>
   );
 }

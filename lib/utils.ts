@@ -1,6 +1,8 @@
 /**
  * Format price to Vietnamese Dong currency format
  */
+import type { Product } from './types';
+
 export const priceFormatter = new Intl.NumberFormat('vi-VN', {
   style: 'currency',
   currency: 'VND',
@@ -23,7 +25,7 @@ export const formatPrice = (price: number): string => {
 /**
  * Calculate total power consumption from selected parts
  */
-export const calculateTotalPower = (selectedParts: { [key: string]: any }): number => {
+export const calculateTotalPower = (selectedParts: Record<string, Product | null>): number => {
   let total = 0;
   
   if (selectedParts.cpu?.specs?.power_consumption) {

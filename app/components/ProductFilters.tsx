@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { Product } from '@/lib/types';
 
 interface ProductFiltersProps {
@@ -14,6 +15,8 @@ export function ProductFilters({ products, onFiltersChange }: ProductFiltersProp
   const [selectedBrand, setSelectedBrand] = React.useState<string>('');
   const [searchModel, setSearchModel] = React.useState<string>('');
   const [sortBy, setSortBy] = React.useState<SortType>('newest');
+  const [showAdvanced, setShowAdvanced] = React.useState(false);
+  const [priceRange, setPriceRange] = React.useState<[number, number]>([0, 100000000]);
 
   // Get unique brands from products
   const brands = Array.from(new Set(products.map(p => p.brand))).sort();
@@ -22,17 +25,42 @@ export function ProductFilters({ products, onFiltersChange }: ProductFiltersProp
   React.useEffect(() => {
     let filtered = [...products];
 
-    // Filter by brand
+    // Filter by brand (dropdown)
     if (selectedBrand) {
       filtered = filtered.filter(p => p.brand === selectedBrand);
     }
 
-    // Filter by model/name
+    // Enhanced search: search across product name, brand, and specs (case-insensitive)
     if (searchModel) {
-      filtered = filtered.filter(p =>
-        p.name.toLowerCase().includes(searchModel.toLowerCase())
-      );
+      const searchQuery = searchModel.toLowerCase().trim();
+      filtered = filtered.filter(p => {
+        // Search in product name
+        if (p.name.toLowerCase().includes(searchQuery)) {
+          return true;
+        }
+        
+        // Search in brand name
+        if (p.brand.toLowerCase().includes(searchQuery)) {
+          return true;
+        }
+        
+        // Search in product specs
+        if (p.specs && typeof p.specs === 'object') {
+          return Object.values(p.specs).some(specValue => {
+            if (specValue === null || specValue === undefined) {
+              return false;
+            }
+            const specStr = String(specValue).toLowerCase();
+            return specStr.includes(searchQuery);
+          });
+        }
+        
+        return false;
+      });
     }
+
+    // Filter by price range
+    filtered = filtered.filter(p => p.price >= priceRange[0] && p.price <= priceRange[1]);
 
     // Sort
     switch (sortBy) {
@@ -55,75 +83,198 @@ export function ProductFilters({ products, onFiltersChange }: ProductFiltersProp
     }
 
     onFiltersChange(filtered);
-  }, [selectedBrand, searchModel, sortBy, products]);
+  }, [selectedBrand, searchModel, sortBy, products, priceRange, onFiltersChange]);
 
   const handleReset = () => {
     setSelectedBrand('');
     setSearchModel('');
     setSortBy('newest');
+    setPriceRange([0, 100000000]);
   };
 
+  // Get min and max prices for range slider
+  const minPrice = Math.min(...products.map(p => p.price || 0));
+  const maxPrice = Math.max(...products.map(p => p.price || 0));
+
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-md p-6 mb-6 border border-blue-100"
+    >
+      {/* Basic Filters */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         {/* Brand Filter */}
-        <div>
+        <motion.div
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3, delay: 0.05 }}
+        >
           <label className="block text-sm font-semibold text-gray-700 mb-2">
             🏢 Hãng sản xuất
           </label>
           <select
             value={selectedBrand}
             onChange={(e) => setSelectedBrand(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
           >
             <option value="">Tất cả hãng</option>
             {brands.map(brand => (
               <option key={brand} value={brand}>{brand}</option>
             ))}
           </select>
-        </div>
+        </motion.div>
 
         {/* Model Search */}
-        <div>
+        <motion.div
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="md:col-span-2"
+        >
           <label className="block text-sm font-semibold text-gray-700 mb-2">
-            🔍 Tìm kiếm mô hình
+            🔍 Tìm kiếm sản phẩm
           </label>
           <input
             type="text"
-            placeholder="VD: Core i7, Ryzen 5..."
+            placeholder="Tên, hãng, hoặc spec (VD: AMD, Nvidia, socket...)"
             value={searchModel}
             onChange={(e) => setSearchModel(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
           />
-        </div>
+          <p className="text-xs text-gray-500 mt-1">
+            Tìm kiếm theo tên, hãng sản xuất, hoặc thông số kỹ thuật (case-insensitive)
+          </p>
+        </motion.div>
 
         {/* Sort */}
-        <div>
+        <motion.div
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3, delay: 0.15 }}
+          className="md:col-span-1"
+        >
           <label className="block text-sm font-semibold text-gray-700 mb-2">
             📊 Sắp xếp
           </label>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortType)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
           >
             <option value="newest">Mới nhất</option>
             <option value="name">Tên (A-Z)</option>
             <option value="price-asc">Giá (Thấp → Cao)</option>
             <option value="price-desc">Giá (Cao → Thấp)</option>
           </select>
-        </div>
+        </motion.div>
 
-        {/* Reset Button */}
-        <div className="flex items-end">
+        {/* Action Buttons */}
+        <motion.div
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+          className="md:col-span-3 flex items-end gap-2"
+        >
           <button
             onClick={handleReset}
-            className="w-full px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition"
+            className="flex-1 px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-all duration-200 transform hover:scale-105"
           >
-            🔄 Đặt lại bộ lọc
+            🔄 Đặt lại
           </button>
-        </div>
+          <motion.button
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2"
+          >
+            ⚙️ {showAdvanced ? 'Ẩn' : 'Chi tiết'}
+            <motion.span
+              animate={{ rotate: showAdvanced ? 180 : 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              ▼
+            </motion.span>
+          </motion.button>
+        </motion.div>
       </div>
-    </div>
+
+      {/* Advanced Filters - Expandable Section */}
+      <AnimatePresence>
+        {showAdvanced && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.4, ease: 'easeInOut' }}
+            className="overflow-hidden"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              className="border-t border-blue-200 pt-6 mt-6"
+            >
+              <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                🎚️ Bộ lọc nâng cao
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Price Range Filter */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: 0.15 }}
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    💰 Khoảng giá
+                  </label>
+                  <div className="space-y-3">
+                    <input
+                      type="range"
+                      min={minPrice}
+                      max={maxPrice}
+                      value={priceRange[0]}
+                      onChange={(e) =>
+                        setPriceRange([Number(e.target.value), priceRange[1]])
+                      }
+                      className="w-full"
+                    />
+                    <input
+                      type="range"
+                      min={minPrice}
+                      max={maxPrice}
+                      value={priceRange[1]}
+                      onChange={(e) =>
+                        setPriceRange([priceRange[0], Number(e.target.value)])
+                      }
+                      className="w-full"
+                    />
+                    <div className="flex gap-2 text-sm text-gray-600">
+                      <span>{Math.round(priceRange[0]).toLocaleString()} đ</span>
+                      <span>-</span>
+                      <span>{Math.round(priceRange[1]).toLocaleString()} đ</span>
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Info Box */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                  className="md:col-span-3 bg-white rounded-lg p-4 border border-blue-200"
+                >
+                  <p className="text-sm text-gray-600">
+                    <span className="font-semibold text-blue-600">💡 Mẹo:</span> Sử dụng các bộ lọc trên để tìm kiếm sản phẩm phù hợp với nhu cầu của bạn. Các filter sẽ tự động làm mới danh sách sản phẩm.
+                  </p>
+                </motion.div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }

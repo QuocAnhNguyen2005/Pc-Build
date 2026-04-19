@@ -1,14 +1,13 @@
 import Link from 'next/link';
-import type { Product, Category } from '@/lib/types';
+import type { Product } from '@/lib/types';
 import { formatPrice } from '@/lib/utils';
 
 interface ProductCardProps {
   product: Product;
-  category?: Category;
   onSelect?: (product: Product) => void;
 }
 
-export function ProductCard({ product, category, onSelect }: ProductCardProps) {
+export function ProductCard({ product, onSelect }: ProductCardProps) {
   const { name, brand, price, specs } = product;
 
   const handleSelect = () => {
