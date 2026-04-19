@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { CategorySidebar } from '@/app/components/CategorySidebar';
 import { ProductGrid } from '@/app/components/ProductGrid';
 import { ProductFilters } from '@/app/components/ProductFilters';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Home() {
   const [categories, setCategories] = useState<Category[]>([]);
